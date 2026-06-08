@@ -1,0 +1,191 @@
+{
+  "project_name": "AFIFA AI Assistant",
+  "theme_archetype": {
+    "id": 7,
+    "name": "Electric & Neon (Modified for Premium JARVIS-vibe)",
+    "mode": "Dark Mode First",
+    "description": "Futuristic, elegant, minimal, and premium. Deep black backgrounds layered with glassmorphic cards and soft, radiating neon glows to indicate AI states."
+  },
+  "typography": {
+    "primary_font": "Space Grotesk",
+    "primary_fallback": "Orbitron",
+    "secondary_font": "Inter",
+    "scale": {
+      "h1": "text-4xl sm:text-5xl font-bold tracking-tighter leading-tight",
+      "h2": "text-2xl sm:text-3xl font-semibold tracking-tight",
+      "h3": "text-xl sm:text-2xl font-medium tracking-tight",
+      "h4": "text-lg font-medium",
+      "body_lg": "text-base sm:text-lg font-normal leading-relaxed",
+      "body": "text-sm sm:text-base font-normal leading-relaxed",
+      "small": "text-xs font-medium tracking-widest uppercase",
+      "micro": "text-[10px] font-bold tracking-[0.2em] uppercase"
+    },
+    "rules": [
+      "Use Space Grotesk for all headings, numbers, and the Voice Orb states.",
+      "Use Inter for all chat messages, descriptions, and body copy to maximize readability.",
+      "Never center-align body text; left-align for tech-precision feel."
+    ]
+  },
+  "colors": {
+    "base": {
+      "background": "#050505",
+      "surface": "rgba(255, 255, 255, 0.03)",
+      "surface_highlight": "rgba(255, 255, 255, 0.08)",
+      "border": "rgba(255, 255, 255, 0.1)"
+    },
+    "text": {
+      "primary": "#FFFFFF",
+      "secondary": "#A1A1AA",
+      "muted": "#52525B"
+    },
+    "presets": {
+      "Blue Neon (Default)": {
+        "primary": "#00E5FF",
+        "primary_glow": "rgba(0, 229, 255, 0.4)",
+        "border_active": "rgba(0, 229, 255, 0.2)"
+      },
+      "White Glow": {
+        "primary": "#FFFFFF",
+        "primary_glow": "rgba(255, 255, 255, 0.4)",
+        "border_active": "rgba(255, 255, 255, 0.2)"
+      },
+      "Purple Cyber": {
+        "primary": "#B026FF",
+        "primary_glow": "rgba(176, 38, 255, 0.4)",
+        "border_active": "rgba(176, 38, 255, 0.2)"
+      },
+      "Green Matrix": {
+        "primary": "#00FF41",
+        "primary_glow": "rgba(0, 255, 65, 0.4)",
+        "border_active": "rgba(0, 255, 65, 0.2)"
+      },
+      "Red Tech": {
+        "primary": "#FF003C",
+        "primary_glow": "rgba(255, 0, 60, 0.4)",
+        "border_active": "rgba(255, 0, 60, 0.2)"
+      },
+      "Gold Premium": {
+        "primary": "#FFD700",
+        "primary_glow": "rgba(255, 215, 0, 0.4)",
+        "border_active": "rgba(255, 215, 0, 0.2)"
+      }
+    }
+  },
+  "spacing": {
+    "container_padding": "px-6",
+    "section_gap": "gap-8",
+    "item_gap": "gap-4",
+    "card_padding": "p-5"
+  },
+  "components": {
+    "VoiceOrb": {
+      "description": "The soul of the app. A central animated circle representing the AI's presence.",
+      "states": {
+        "Idle": "Gentle pulse, 80% opacity, slow scale (0.95 to 1.05).",
+        "Listening": "Radiating concentric rings matching the primary neon color.",
+        "Thinking": "Rotating particles or glowing border spinner.",
+        "Speaking": "Dynamic waveform bars sprouting from the center or enveloping the orb."
+      },
+      "implementation": "Use React Native Reanimated or a Lottie file for fluid 60fps animations. Add a soft BoxShadow for the glow effect."
+    },
+    "GlassCard": {
+      "description": "Used for modules, settings, and memory items.",
+      "styles": "bg-white/5 border border-white/10 rounded-[24px] overflow-hidden",
+      "blur": "Requires expo-blur (BlurView) with 'dark' tint and high intensity, or a solid fallback #121212 if blur is not supported.",
+      "hover_active_state": "On press, scale down to 0.98 and increase border opacity."
+    },
+    "BottomTabNav": {
+      "styles": "absolute bottom-0 w-full h-24 bg-black/80 border-t border-white/10",
+      "items": ["Home", "Chat", "Modules", "Memory", "Profile"],
+      "active_state": "Icon tinted to Primary Neon, glowing dot below the icon."
+    },
+    "Button": {
+      "primary": "bg-[var(--primary)] text-black rounded-full py-4 px-8 font-bold text-lg tracking-wide",
+      "secondary": "bg-white/10 border border-white/20 text-white rounded-full py-4 px-8 font-semibold",
+      "ghost": "bg-transparent text-white/70 py-4 px-8 font-semibold"
+    },
+    "ChatBubble": {
+      "ai": "bg-transparent border border-white/10 p-4 rounded-2xl rounded-tl-sm w-[85%] self-start",
+      "user": "bg-[var(--primary)]/10 border border-[var(--primary)]/20 p-4 rounded-2xl rounded-tr-sm w-[85%] self-end",
+      "model_badge": "absolute -top-3 left-3 bg-black border border-white/20 px-2 py-0.5 rounded-full text-[10px] text-white/70"
+    }
+  },
+  "screens": {
+    "Splash": {
+      "layout": "Centered AFIFA typography, space-grotesk, large. Below it, an animated glowing waveform line. Pure black background."
+    },
+    "Onboarding": {
+      "layout": "Stepper. Top: Progress dots. Center: Large expressive typography + subtle background glow. Bottom: Primary action button.",
+      "steps": [
+        "Welcome (AFIFA Introduction)",
+        "User Name Input (Large text field)",
+        "AI Name & Wake Word (Customizable)",
+        "Voice Selection (Playable voice cards)",
+        "Permissions (Mic/Storage)",
+        "Setup Complete (Orb activates)"
+      ]
+    },
+    "Home_Dashboard": {
+      "layout": "Hero screen.",
+      "header": "Greeting ('Good Morning, Alex') + Date/Time.",
+      "center": "Massive Voice Orb (tap to talk).",
+      "bottom": "Horizontal scroll or 2x2 grid of 'Frequent Modules' (GlassCards) overlapping the bottom of the screen.",
+      "nav": "BottomTabNav overlaid."
+    },
+    "Chat": {
+      "header": "AI Name + Active Model Dropdown (GPT/Claude/Gemini).",
+      "body": "Vertical ScrollView of ChatBubbles.",
+      "footer": "Glassmorphic input bar + Attachment Icon (left) + Voice Mic/Send Icon (right)."
+    },
+    "Voice_Overlay": {
+      "layout": "Full screen semi-transparent black backdrop (bg-black/80 backdrop-blur-md). Massive active Voice Orb in the center with waveform. Live transcription text below it."
+    },
+    "Modules_Grid": {
+      "layout": "SafeAreaView. 'All Capabilities' Header. 3x4 or 2x6 Grid of square GlassCards. Each card has a Lucide Icon and a label."
+    },
+    "Memory_Center": {
+      "layout": "Search bar at top. Filter chips (Conversations, Notes, Projects). Vertical list of memory GlassCards (Title, date, summary snippet)."
+    },
+    "Settings_Theme": {
+      "layout": "List view. 'Appearance' section features horizontal scroll of Theme preset circles. Tapping one instantly updates the CSS variables across the app."
+    },
+    "Profile": {
+      "layout": "Avatar/Voice Profile at top. AI Name display. Preferences list (Language, Security PIN/Fingerprint)."
+    },
+    "Generic_Module_Detail": {
+      "layout": "Standardized internal screen. Top App Bar with Back arrow and Module Title. Content area specific to the module (e.g., Job Assistant inputs, Document Generator forms)."
+    }
+  },
+  "icons": {
+    "library": "lucide-react-native",
+    "rules": "Use strokeWidth=1.5. Tint icons with pure white or Primary Neon depending on active state. Absolutely NO emojis."
+  },
+  "media": {
+    "backgrounds": [
+      {
+        "url": "https://images.unsplash.com/photo-1579548122080-c35fd6820ecb?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODl8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMGRhcmslMjBibHVlJTIwbmVvbiUyMGxpbmVzfGVufDB8fHx8MTc4MDkyMjM3N3ww&ixlib=rb-4.1.0&q=85",
+        "category": "app_background",
+        "description": "Abstract dark blue neon lines, can be used at very low opacity for splash or empty states."
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1644088379091-d574269d422f?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzZ8MHwxfHNlYXJjaHwxfHxmdXR1cmlzdGljJTIwdGVjaG5vbG9neSUyMGRhdGF8ZW58MHx8fHwxNzgwOTIyMzc3fDA&ixlib=rb-4.1.0&q=85",
+        "category": "module_illustration",
+        "description": "Futuristic technology data. Use as a header background for the 'Coding Assistant' or 'Automation Center' module."
+      },
+      {
+        "url": "https://images.pexels.com/photos/15303330/pexels-photo-15303330.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "category": "onboarding_background",
+        "description": "Dynamic blue light streaks. Excellent for the Onboarding setup complete screen."
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "This is a React Native (Expo) app. Use NativeWind or StyleSheet for styling.",
+    "Implement the Theme system using React Context and dynamic CSS variables or a theme provider to allow instant swapping between the 6 presets.",
+    "For the Voice Orb, prioritize React Native Reanimated to ensure 60fps performance without JavaScript thread blocking.",
+    "Ensure all text elements over dark backgrounds meet at least WCAG AA contrast standards.",
+    "Use 'expo-blur' for the GlassCard components to achieve the premium iOS/Android frosted glass effect.",
+    "Apply `data-testid` to all touchables, inputs, and navigation elements.",
+    "Keep gradients to an absolute minimum. Rely on deep blacks, sharp 1px borders, and soft BoxShadow glows."
+  ]
+}
