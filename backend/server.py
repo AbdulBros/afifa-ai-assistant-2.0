@@ -44,6 +44,8 @@ from emergentintegrations.llm.chat import (
     UserMessage,
     ImageContent,
 )
+from emergentintegrations.llm.openai.text_to_speech import OpenAITextToSpeech
+from emergentintegrations.llm.openai.speech_to_text import OpenAISpeechToText
 
 # ---------------------------------------------------------------------------
 # Setup
@@ -162,8 +164,8 @@ async def google_session(body: SessionPayload):
                 "voice_id": "alloy",
                 "theme": "Blue Neon",
                 "language": "en",
-                "model_provider": "openai",
-                "model_name": "gpt-5.4",
+                "model_provider": DEFAULT_PROVIDER,
+                "model_name": DEFAULT_MODEL,
                 "onboarding_complete": False,
                 "created_at": utc_now(),
             }
@@ -214,8 +216,8 @@ async def guest_session(body: GuestPayload):
             "voice_id": "alloy",
             "theme": "Blue Neon",
             "language": "en",
-            "model_provider": "openai",
-            "model_name": "gpt-5.4",
+            "model_provider": DEFAULT_PROVIDER,
+            "model_name": DEFAULT_MODEL,
             "onboarding_complete": False,
             "created_at": utc_now(),
         }
@@ -282,8 +284,8 @@ async def get_profile(user: dict = Depends(get_current_user)):
             "voice_id": "alloy",
             "theme": "Blue Neon",
             "language": "en",
-            "model_provider": "openai",
-            "model_name": "gpt-5.4",
+            "model_provider": DEFAULT_PROVIDER,
+            "model_name": DEFAULT_MODEL,
             "onboarding_complete": False,
             "created_at": utc_now(),
         }
@@ -312,21 +314,24 @@ api.include_router(profile_router)
 # LLM utilities
 # ---------------------------------------------------------------------------
 MODEL_REGISTRY = {
-    "openai": ["gpt-5.4", "gpt-5.4-mini", "gpt-5.2", "gpt-4o", "gpt-4.1-mini"],
-    "anthropic": ["claude-sonnet-4-6", "claude-haiku-4-5-20251001", "claude-opus-4-7"],
-    "gemini": ["gemini-3.1-pro-preview", "gemini-3-flash-preview", "gemini-2.5-flash"],
+    "openai": ["gpt-4o-mini", "gpt-4o", "gpt-4.1-mini", "gpt-4.1", "gpt-5-mini"],
+    "anthropic": ["claude-sonnet-4-5-20250929", "claude-haiku-4-5-20251001", "claude-opus-4-5-20251101"],
+    "gemini": ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash-lite"],
 }
+
+DEFAULT_PROVIDER = "openai"
+DEFAULT_MODEL = "gpt-4o-mini"
 
 
 def build_chat(
     session_id: str,
     system_message: str,
-    provider: str = "openai",
-    model: str = "gpt-5.4",
+    provider: str = DEFAULT_PROVIDER,
+    model: str = DEFAULT_MODEL,
 ) -> LlmChat:
-    if provider not in MODEL_REGISTRY:
-        provider = "openai"
-        model = "gpt-5.4"
+    if provider not in MODEL_REGISTRY or model not in MODEL_REGISTRY[provider]:
+        provider = DEFAULT_PROVIDER
+        model = DEFAULT_MODEL
     return LlmChat(
         api_key=EMERGENT_LLM_KEY,
         session_id=session_id,
@@ -337,9 +342,10 @@ def build_chat(
 async def llm_complete(
     system: str,
     prompt: str,
-    provider: str = "openai",
-    model: str = "gpt-5.4",
+    *,
     session_id: Optional[str] = None,
+    provider: str = DEFAULT_PROVIDER,
+    model: str = DEFAULT_MODEL,
 ) -> str:
     chat = build_chat(session_id or new_id("sess"), system, provider, model)
     out = []
@@ -359,8 +365,8 @@ chat_router = APIRouter(prefix="/chat", tags=["chat"])
 
 class ConversationCreate(BaseModel):
     title: Optional[str] = None
-    provider: Optional[str] = "openai"
-    model: Optional[str] = "gpt-5.4"
+    provider: Optional[str] = DEFAULT_PROVIDER
+    model: Optional[str] = DEFAULT_MODEL
 
 
 class MessageCreate(BaseModel):
@@ -388,8 +394,8 @@ async def create_conversation(body: ConversationCreate, user: dict = Depends(get
         "conversation_id": new_id("conv"),
         "user_id": user["user_id"],
         "title": body.title or "New Chat",
-        "provider": body.provider or "openai",
-        "model": body.model or "gpt-5.4",
+        "provider": body.provider or DEFAULT_PROVIDER,
+        "model": body.model or DEFAULT_MODEL,
         "created_at": utc_now(),
         "updated_at": utc_now(),
     }
@@ -602,11 +608,11 @@ api.include_router(memory_router)
 
 
 # ---------------------------------------------------------------------------
-# Voice — Whisper STT + OpenAI TTS via direct API
+# Voice — Whisper STT + OpenAI TTS via emergentintegrations (Emergent proxy)
 # ---------------------------------------------------------------------------
 voice_router = APIRouter(prefix="/voice", tags=["voice"])
 
-OPENAI_BASE = "https://integrations.emergentagent.com/llm"  # proxy that accepts EMERGENT_LLM_KEY
+import tempfile
 
 
 @voice_router.post("/transcribe")
@@ -614,40 +620,47 @@ async def transcribe_audio(
     audio: UploadFile = File(...),
     user: dict = Depends(get_current_user),
 ):
-    """Send recorded audio (m4a/wav/mp3) to Whisper and return text."""
+    """Send recorded audio to Whisper and return transcribed text."""
     if not EMERGENT_LLM_KEY:
         raise HTTPException(500, "LLM key not configured")
     audio_bytes = await audio.read()
     if not audio_bytes:
         raise HTTPException(400, "Empty audio")
 
-    files = {
-        "file": (audio.filename or "audio.m4a", audio_bytes, audio.content_type or "audio/m4a"),
-    }
-    data = {"model": "whisper-1"}
-    headers = {"Authorization": f"Bearer {EMERGENT_LLM_KEY}"}
+    # Pick an extension Whisper understands
+    fname = audio.filename or "audio.m4a"
+    suffix = "." + (fname.rsplit(".", 1)[-1].lower() if "." in fname else "m4a")
+    if suffix.strip(".") not in {"mp3", "mp4", "mpeg", "mpga", "m4a", "wav", "webm"}:
+        suffix = ".m4a"
 
-    async with httpx.AsyncClient(timeout=60) as http:
-        # First try direct OpenAI compatible endpoint
-        urls = [
-            "https://api.openai.com/v1/audio/transcriptions",
-        ]
-        last_err = None
-        for url in urls:
-            try:
-                r = await http.post(url, headers=headers, files=files, data=data)
-                if r.status_code == 200:
-                    return {"text": r.json().get("text", "")}
-                last_err = r.text
-            except Exception as e:  # noqa: BLE001
-                last_err = str(e)
-        logger.error("Whisper failed: %s", last_err)
-        raise HTTPException(502, f"Transcription failed: {last_err[:200]}")
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+    try:
+        tmp.write(audio_bytes)
+        tmp.flush()
+        tmp.close()
+        stt = OpenAISpeechToText(api_key=EMERGENT_LLM_KEY)
+        result = await stt.transcribe(file=tmp.name, model="whisper-1", response_format="text")
+        # result is either dict-like or plain text depending on response_format
+        if isinstance(result, str):
+            text = result
+        elif isinstance(result, dict):
+            text = result.get("text", "")
+        else:
+            text = getattr(result, "text", str(result))
+        return {"text": text.strip()}
+    except Exception as e:  # noqa: BLE001
+        logger.exception("Whisper failed")
+        raise HTTPException(502, f"Transcription failed: {str(e)[:200]}")
+    finally:
+        try:
+            os.unlink(tmp.name)
+        except Exception:
+            pass
 
 
 class TTSRequest(BaseModel):
     text: str
-    voice: Optional[str] = "alloy"  # alloy, echo, fable, onyx, nova, shimmer
+    voice: Optional[str] = "alloy"
     format: Optional[Literal["mp3", "opus", "aac", "flac", "wav", "pcm"]] = "mp3"
 
 
@@ -655,25 +668,20 @@ class TTSRequest(BaseModel):
 async def tts(body: TTSRequest, user: dict = Depends(get_current_user)):
     if not EMERGENT_LLM_KEY:
         raise HTTPException(500, "LLM key not configured")
-    headers = {
-        "Authorization": f"Bearer {EMERGENT_LLM_KEY}",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "model": "tts-1",
-        "voice": body.voice or "alloy",
-        "input": body.text[:4000],
-        "format": body.format or "mp3",
-    }
-    async with httpx.AsyncClient(timeout=60) as http:
-        r = await http.post(
-            "https://api.openai.com/v1/audio/speech", headers=headers, json=payload
+    voice = body.voice or "alloy"
+    if voice not in {"alloy", "ash", "coral", "echo", "fable", "nova", "onyx", "sage", "shimmer"}:
+        voice = "alloy"
+    try:
+        tts_client = OpenAITextToSpeech(api_key=EMERGENT_LLM_KEY)
+        audio_b64 = await tts_client.generate_speech_base64(
+            text=body.text[:4000],
+            voice=voice,  # type: ignore[arg-type]
+            response_format=body.format or "mp3",
         )
-    if r.status_code != 200:
-        logger.error("TTS failed: %s", r.text[:300])
-        raise HTTPException(502, "TTS failed")
-    audio_b64 = base64.b64encode(r.content).decode("ascii")
-    return {"audio_base64": audio_b64, "format": body.format or "mp3"}
+        return {"audio_base64": audio_b64, "format": body.format or "mp3"}
+    except Exception as e:  # noqa: BLE001
+        logger.exception("TTS failed")
+        raise HTTPException(502, f"TTS failed: {str(e)[:200]}")
 
 
 api.include_router(voice_router)
@@ -753,7 +761,7 @@ async def analyze_resume(body: ResumeAnalyzeRequest, user: dict = Depends(get_cu
     out = await llm_complete(
         sys,
         f"RESUME:\n{body.resume_text[:8000]}\n\nJOB DESCRIPTION:\n{body.job_description[:6000]}",
-        user["user_id"],
+        session_id=user["user_id"],
     )
     return {"analysis": out}
 
@@ -764,7 +772,7 @@ async def cover_letter(body: CoverLetterRequest, user: dict = Depends(get_curren
     out = await llm_complete(
         sys,
         f"RESUME:\n{body.resume_text[:6000]}\n\nJOB DESCRIPTION:\n{body.job_description[:5000]}",
-        user["user_id"],
+        session_id=user["user_id"],
     )
     return {"cover_letter": out}
 
@@ -802,7 +810,7 @@ async def code_run(body: CodeRequest, user: dict = Depends(get_current_user)):
             f"Refactor this {body.language} code for readability, performance, and "
             f"idiomatic style. Explain the changes.\n```{body.language}\n{body.code}\n```\n\nGoal: {body.prompt}"
         )
-    out = await llm_complete(sys, prompt, user["user_id"])
+    out = await llm_complete(sys, prompt, session_id=user["user_id"])
     return {"output": out}
 
 
@@ -862,7 +870,7 @@ async def generate_prompt(body: PromptGenRequest, user: dict = Depends(get_curre
     out = await llm_complete(
         sys,
         f"Use case: {body.use_case}\nTopic: {body.topic}\nStyle: {body.style}",
-        user["user_id"],
+        session_id=user["user_id"],
     )
     return {"prompt": out}
 
@@ -889,7 +897,7 @@ async def generate_doc(body: DocRequest, user: dict = Depends(get_current_user))
     out = await llm_complete(
         sys,
         f"Topic / details:\n{body.topic}\n\nAdditional notes: {body.extra}",
-        user["user_id"],
+        session_id=user["user_id"],
     )
     item = {
         "document_id": new_id("doc"),
@@ -942,7 +950,7 @@ async def draft_email(body: EmailDraftRequest, user: dict = Depends(get_current_
     out = await llm_complete(
         sys,
         f"Recipient: {body.recipient}\nIntent: {body.intent}",
-        user["user_id"],
+        session_id=user["user_id"],
     )
     return {"email": out}
 
@@ -953,7 +961,7 @@ async def summarize_email(body: EmailSummarizeRequest, user: dict = Depends(get_
         "Summarize the email: 1) one-line TL;DR, 2) key points, 3) action items, "
         "4) 2 suggested replies (short and full)."
     )
-    out = await llm_complete(sys, body.email_text[:8000], user["user_id"])
+    out = await llm_complete(sys, body.email_text[:8000], session_id=user["user_id"])
     return {"summary": out}
 
 
