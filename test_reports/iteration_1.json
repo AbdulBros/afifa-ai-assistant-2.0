@@ -1,0 +1,55 @@
+{
+  "summary": "Backend-only testing for AFIFA V1 (14 modules). Ran 16 pytest cases against the public EXPO_PUBLIC_BACKEND_URL. 9/16 PASS (56%). All non-LLM CRUD modules work (health, auth/guest, auth/me, profile GET+PUT with wake_word auto-update, memory CRUD, calendar CRUD, automation rule CRUD+queue, chat/models, conversation create). All LLM-backed endpoints FAIL with HTTP 500 because the configured default model name 'gpt-5.4' is rejected by the Emergent LLM proxy (litellm BadRequestError: 'Invalid model name passed in model=gpt-5.4'). Voice TTS FAILS with HTTP 502 because the endpoint POSTs directly to https://api.openai.com/v1/audio/speech using EMERGENT_LLM_KEY, which OpenAI rejects with 'Incorrect API key provided'. Same architectural issue applies to /api/voice/transcribe (Whisper).",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "MODEL_REGISTRY defaults (server.py:314-318, 166, 218, 286, 329, 392)", "issue": "All default model names (gpt-5.4, gpt-5.4-mini, gpt-5.2, claude-sonnet-4-6, claude-haiku-4-5-20251001, claude-opus-4-7, gemini-3.1-pro-preview, gemini-3-flash-preview) are NOT valid model names accepted by the Emergent LLM proxy. Litellm returns BadRequestError 400. Only 'gpt-4o' and 'gpt-4.1-mini' look real. Replace defaults with a known-valid model (e.g. gpt-4o-mini) and update the registry to verified models supported by emergentintegrations.", "priority": "CRITICAL"},
+      {"endpoint": "POST /api/chat/conversations/{id}/messages", "issue": "Returns 500. Cause: default model gpt-5.4 rejected by LLM proxy. assistant_message never returned.", "priority": "CRITICAL"},
+      {"endpoint": "POST /api/jobs/analyze-resume, /api/jobs/cover-letter", "issue": "Returns 500 — same LLM model name failure.", "priority": "CRITICAL"},
+      {"endpoint": "POST /api/code/run", "issue": "Returns 500 — same LLM model name failure.", "priority": "CRITICAL"},
+      {"endpoint": "POST /api/prompts/generate", "issue": "Returns 500 — same LLM model name failure.", "priority": "CRITICAL"},
+      {"endpoint": "POST /api/documents/generate", "issue": "Returns 500 — same LLM model name failure.", "priority": "CRITICAL"},
+      {"endpoint": "POST /api/email/draft, /api/email/summarize", "issue": "Returns 500 — same LLM model name failure.", "priority": "CRITICAL"},
+      {"endpoint": "POST /api/voice/tts", "issue": "Returns 502. server.py:668-670 POSTs to https://api.openai.com/v1/audio/speech directly with EMERGENT_LLM_KEY in the Authorization header. OpenAI responds 401 'Incorrect API key provided'. EMERGENT_LLM_KEY is for the Emergent proxy (https://integrations.emergentagent.com/llm), NOT api.openai.com. Either route via the emergent proxy or use a real OPENAI_API_KEY. Note the constant OPENAI_BASE defined at line 609 is never used.", "priority": "CRITICAL"},
+      {"endpoint": "POST /api/voice/transcribe", "issue": "Same architectural problem as TTS — calls https://api.openai.com/v1/audio/transcriptions with EMERGENT_LLM_KEY. Will fail 401. Not exercised in this run (requires audio upload) but bug is present in code (server.py:632-645).", "priority": "CRITICAL"}
+    ],
+    "minor": [
+      {"endpoint": "llm_complete(...) call sites", "issue": "Most non-chat LLM callers do `llm_complete(sys, prompt, user['user_id'])` (jobs/code/prompts/documents/email). The 3rd positional argument is `provider`, so user_id is being passed as provider and silently falls back to ('openai','gpt-5.4') in build_chat. Intended behaviour seems to be session_id. Use keyword arg `session_id=user['user_id']` instead."},
+      {"endpoint": "POST /api/auth/guest", "issue": "Creates a fresh guest user on EVERY call with no rate limiting or cleanup. Could rapidly grow users collection. Not blocking but worth a TTL or anonymous reuse strategy."},
+      {"endpoint": "Profile seeding", "issue": "Guest endpoint inserts a profile unconditionally; if /api/auth/guest is ever called twice for the same user_id (won't happen with new_id, but worth a `upsert=True` for safety) it would crash on the unique index."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_afifa_backend.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Replace default model 'gpt-5.4' with a valid model (e.g. 'gpt-4o-mini' or 'gpt-4o') everywhere in server.py: lines 166, 218, 286, 325, 329, 341, 363, 392. Update MODEL_REGISTRY (lines 314-318) to only include models actually supported by emergentintegrations / litellm via the Emergent key.",
+    "Fix voice TTS (server.py:654-676) and STT (server.py:612-645) to either (a) route through the Emergent proxy that accepts EMERGENT_LLM_KEY, or (b) read a separate OPENAI_API_KEY from env. The constant OPENAI_BASE on line 609 is defined but never used.",
+    "Fix llm_complete() call sites in jobs/code/prompts/documents/email to pass user_id as keyword session_id (currently passed as positional `provider`, silently broken).",
+    "After fixes, re-run: pytest /app/backend/tests/test_afifa_backend.py -v --tb=short. All 16 tests should pass."
+  ],
+  "critical_code_review_comments": [
+    "MODEL_REGISTRY contains fabricated/future model names that the LLM gateway rejects — every LLM flow is broken until this is corrected.",
+    "Voice module bypasses the emergent proxy and hits OpenAI directly with the wrong key — never worked.",
+    "llm_complete signature is being misused at 7+ call sites (positional arg confusion).",
+    "server.py is 1169 lines — consider splitting per-module once stable.",
+    "Pydantic models are fine; MongoDB _id correctly excluded via projection / serialize()."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_afifa_backend.py (new)",
+    "/app/test_reports/pytest/pytest_results.xml (new)",
+    "/app/test_reports/iteration_1.json (new)"
+  ],
+  "success_rate": {"backend": "56% (9/16)", "frontend": "not tested"},
+  "seed_data_creation": "Each test creates a fresh guest user via /api/auth/guest (TEST_ prefix). Test-created memory/jobs/prompts/documents/calendar/automation items are deleted at the end of their test.",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Re-run /app/backend/tests/test_afifa_backend.py after main agent fixes (1) MODEL_REGISTRY/default model name and (2) voice TTS+STT routing. All 9 currently-passing tests should remain green; the 7 failing tests are gated on these two fixes. Add a /api/voice/transcribe test once a stable audio sample is available.",
+  "rca_of_issue": "RCA #1 (LLM 500s): build_chat() always returns LlmChat configured with provider='openai', model='gpt-5.4'. The Emergent LLM gateway routes the request through litellm to OpenAI which returns 400 'Invalid model name passed in model=gpt-5.4'. emergentintegrations wraps this as ChatError which FastAPI bubbles up as 500. Reproduction: POST /api/chat/conversations then POST /api/chat/conversations/{id}/messages with any text → 500. Fix: change default to a real model name (gpt-4o-mini etc.) and prune MODEL_REGISTRY to verified names. RCA #2 (TTS 502): voice_router.tts posts to api.openai.com using EMERGENT_LLM_KEY, which is rejected by OpenAI ('Incorrect API key provided: sk-emerg...'). Fix: either set a real OPENAI_API_KEY env var or use emergentintegrations' audio helpers / the emergent proxy URL that accepts EMERGENT_LLM_KEY. Same fix needed for /api/voice/transcribe."
+}

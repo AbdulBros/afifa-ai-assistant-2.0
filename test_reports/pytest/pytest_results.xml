@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="16" time="2.499" timestamp="2026-06-08T13:01:34.521103+00:00" hostname="agent-env-d6ef348f-d92e-43bd-a8a0-215c71d38454"><testcase classname="backend.tests.test_afifa_backend" name="test_health" time="0.164" /><testcase classname="backend.tests.test_afifa_backend" name="test_auth_me" time="0.108" /><testcase classname="backend.tests.test_afifa_backend" name="test_auth_missing_token" time="0.050" /><testcase classname="backend.tests.test_afifa_backend" name="test_profile_seeded" time="0.060" /><testcase classname="backend.tests.test_afifa_backend" name="test_profile_update_ai_name_updates_wake_word" time="0.131" /><testcase classname="backend.tests.test_afifa_backend" name="test_chat_models" time="0.053" /><testcase classname="backend.tests.test_afifa_backend" name="test_chat_full_flow" time="0.440"><failure message="AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_afifa_backend.py:119: in test_chat_full_flow
+    assert r.status_code == 200, r.text[:300]
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_afifa_backend" name="test_memory_crud" time="0.154" /><testcase classname="backend.tests.test_afifa_backend" name="test_jobs_crud_and_llm" time="0.183"><failure message="AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_afifa_backend.py:183: in test_jobs_crud_and_llm
+    assert r.status_code == 200, r.text[:300]
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_afifa_backend" name="test_code_generate" time="0.097"><failure message="AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_afifa_backend.py:209: in test_code_generate
+    assert r.status_code == 200, r.text[:300]
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_afifa_backend" name="test_prompts_crud_and_generate" time="0.082"><failure message="AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_afifa_backend.py:221: in test_prompts_crud_and_generate
+    assert r.status_code == 200, r.text[:300]
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_afifa_backend" name="test_documents" time="0.086"><failure message="AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_afifa_backend.py:249: in test_documents
+    assert r.status_code == 200, r.text[:300]
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_afifa_backend" name="test_email_draft_and_summarize" time="0.081"><failure message="AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_afifa_backend.py:269: in test_email_draft_and_summarize
+    assert r.status_code == 200, r.text[:300]
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_afifa_backend" name="test_calendar_crud" time="0.202" /><testcase classname="backend.tests.test_afifa_backend" name="test_automation_rule_queue" time="0.173" /><testcase classname="backend.tests.test_afifa_backend" name="test_voice_tts" time="0.211"><failure message="AssertionError: {&quot;detail&quot;:&quot;TTS failed&quot;}&#10;assert 502 == 200&#10; +  where 502 = &lt;Response [502]&gt;.status_code">backend/tests/test_afifa_backend.py:353: in test_voice_tts
+    assert r.status_code == 200, r.text[:300]
+E   AssertionError: {"detail":"TTS failed"}
+E   assert 502 == 200
+E    +  where 502 = &lt;Response [502]&gt;.status_code</failure></testcase></testsuite></testsuites>
