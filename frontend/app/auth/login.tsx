@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/src/auth/AuthContext";
 import { NeonButton } from "@/src/components/NeonButton";
 import { useToast } from "@/src/components/Toast";
-import { VoiceOrb } from "@/src/components/VoiceOrb";
+import { HorizontalWaveform } from "@/src/components/HorizontalWaveform";
 import { useTheme } from "@/src/theme/ThemeContext";
 
 export default function LoginScreen() {
@@ -44,7 +44,7 @@ export default function LoginScreen() {
   return (
     <View style={[styles.wrap, { backgroundColor: tokens.bg, paddingTop: insets.top + 32, paddingBottom: insets.bottom + 32 }]} testID="login-screen">
       <View style={styles.top}>
-        <VoiceOrb state="idle" size={160} />
+        <HorizontalWaveform state="listening" width={280} height={110} />
         <Text style={[styles.brand, { color: tokens.text }]}>AFIFA</Text>
         <Text style={[styles.tag, { color: tokens.primary }]}>
           Your Voice. Your Command. Your World.

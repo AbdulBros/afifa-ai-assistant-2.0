@@ -13,6 +13,7 @@ import {
   Calendar,
   Settings as SettingsIcon,
   User,
+  AudioLines,
   type LucideIcon,
 } from "lucide-react-native";
 
@@ -35,8 +36,8 @@ export const MODULES: ModuleDef[] = [
   { id: "documents", label: "Document Generator", blurb: "Reports, resumes, notes.", href: "/modules/documents", Icon: FileText },
   { id: "email", label: "Email Assistant", blurb: "Draft, summarize, reply.", href: "/modules/email", Icon: Mail },
   { id: "calendar", label: "Calendar & Tasks", blurb: "Events, reminders, to-dos.", href: "/modules/calendar", Icon: Calendar },
-  { id: "settings", label: "Settings", blurb: "Theme, model, voice, security.", href: "/(tabs)/settings", Icon: SettingsIcon },
-  { id: "profile", label: "Profile", blurb: "Your account & AI identity.", href: "/(tabs)/profile", Icon: User },
+  { id: "voice-clone", label: "AI Voice Clone", blurb: "Train AFIFA to speak in your voice.", href: "/modules/voice-clone", Icon: AudioLines },
+  { id: "settings", label: "Settings", blurb: "Theme, model, voice, security.", href: "/settings", Icon: SettingsIcon },
 ];
 
 export const LANGUAGES = [

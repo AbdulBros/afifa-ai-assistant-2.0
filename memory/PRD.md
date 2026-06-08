@@ -4,6 +4,9 @@
 AFIFA is a JARVIS-inspired personal AI assistant on mobile. Tagline: **Your Voice. Your Command. Your World.**
 The app brand is always **AFIFA**, but the user's AI is renamable (e.g., "Hi Nova"). The selected assistant name automatically becomes the wake word.
 
+## Brand visual
+The hero across every voice surface is a **horizontal sound-wave visualizer** — vertical bars that follow a bell-curve envelope (taller in the center, tapering to the sides) with a row of small dots underneath. It glows in the active theme color and animates organically per state (idle / listening / thinking / speaking / completed). It is implemented as `src/components/HorizontalWaveform.tsx` and is reused on Splash, Login, Onboarding, Home Dashboard, Voice Assistant, Voice Clone, and Profile.
+
 ## Stack
 - **Frontend**: Expo SDK 54, expo-router, react-native-reanimated, react-native-keyboard-controller, expo-audio, lucide-react-native, react-native-svg.
 - **Backend**: FastAPI + MongoDB (motor), `emergentintegrations` for multi-provider LLM (OpenAI / Anthropic / Gemini), direct OpenAI APIs for Whisper STT + TTS, Emergent-managed Google OAuth.

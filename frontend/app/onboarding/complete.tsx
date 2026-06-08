@@ -3,9 +3,9 @@ import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 import { useAuth } from "@/src/auth/AuthContext";
+import { HorizontalWaveform } from "@/src/components/HorizontalWaveform";
 import { OnboardingShell } from "@/src/components/OnboardingShell";
 import { useToast } from "@/src/components/Toast";
-import { VoiceOrb } from "@/src/components/VoiceOrb";
 import { Profile } from "@/src/lib/api";
 import { useTheme } from "@/src/theme/ThemeContext";
 
@@ -40,7 +40,7 @@ export default function Complete() {
       testID="onboarding-complete"
     >
       <View style={styles.center}>
-        <VoiceOrb state="listening" size={200} />
+        <HorizontalWaveform state="listening" width={320} height={140} />
         <Text style={[styles.wake, { color: tokens.primary }]}>“Hi {aiName}”</Text>
         <Text style={[styles.note, { color: tokens.textDim }]}>{`That's your wake word.`}</Text>
       </View>

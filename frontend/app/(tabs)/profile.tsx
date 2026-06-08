@@ -4,8 +4,8 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useAuth } from "@/src/auth/AuthContext";
 import { GlassCard } from "@/src/components/GlassCard";
+import { HorizontalWaveform } from "@/src/components/HorizontalWaveform";
 import { Screen } from "@/src/components/Screen";
-import { VoiceOrb } from "@/src/components/VoiceOrb";
 import { useTheme } from "@/src/theme/ThemeContext";
 
 export default function ProfileTab() {
@@ -24,7 +24,7 @@ export default function ProfileTab() {
   return (
     <Screen title="Profile" testID="profile-screen" scroll>
       <View style={styles.hero}>
-        <VoiceOrb state="idle" size={140} />
+        <HorizontalWaveform state="idle" width={280} height={100} />
         <Text style={[styles.userName, { color: tokens.text }]}>
           {profile?.user_name || user?.name || "Friend"}
         </Text>

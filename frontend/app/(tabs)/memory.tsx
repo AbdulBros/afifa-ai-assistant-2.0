@@ -1,5 +1,5 @@
 import { useFocusEffect } from "expo-router";
-import { Trash2 } from "lucide-react-native";
+import { Brain, Trash2 } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
@@ -75,6 +75,18 @@ export default function MemoryTab() {
 
   return (
     <Screen title="Memory" testID="memory-screen" scroll>
+      <View style={[styles.brainHero, { borderColor: tokens.borderActive, backgroundColor: tokens.primary + "08" }]}>
+        <View style={[styles.brainOuter, { borderColor: tokens.primary, shadowColor: tokens.primary }]}>
+          <Brain size={48} color={tokens.primary} strokeWidth={1.4} />
+        </View>
+        <Text style={[styles.brainTitle, { color: tokens.text }]}>
+          {items.length} {items.length === 1 ? "memory" : "memories"} stored
+        </Text>
+        <Text style={[styles.brainSub, { color: tokens.textDim }]}>
+          Encrypted and searchable. Tap a category to filter.
+        </Text>
+      </View>
+
       <View
         style={[
           styles.search,
@@ -171,6 +183,28 @@ export default function MemoryTab() {
 }
 
 const styles = StyleSheet.create({
+  brainHero: {
+    alignItems: "center",
+    paddingVertical: 22,
+    paddingHorizontal: 16,
+    borderRadius: 24,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  brainOuter: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowOpacity: 0.5,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 8,
+  },
+  brainTitle: { marginTop: 14, fontSize: 16, fontWeight: "800" },
+  brainSub: { marginTop: 4, fontSize: 12, textAlign: "center" },
   search: {
     padding: 12,
     borderRadius: 14,

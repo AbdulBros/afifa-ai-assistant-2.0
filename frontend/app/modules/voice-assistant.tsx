@@ -1,12 +1,14 @@
-// Voice Assistant — tap-to-talk: record → Whisper STT → LLM → TTS → playback.
+// Voice Assistant screen — full-screen tap-to-talk with horizontal waveform hero.
+// Flow: tap mic → record → Whisper STT → LLM → TTS playback. Shows live timer.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Mic, Square } from "lucide-react-native";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useAuth } from "@/src/auth/AuthContext";
+import { HorizontalWaveform } from "@/src/components/HorizontalWaveform";
 import { Screen } from "@/src/components/Screen";
 import { useToast } from "@/src/components/Toast";
-import { VoiceOrb, OrbState } from "@/src/components/VoiceOrb";
 import { Voice, Chat } from "@/src/lib/api";
 import { playAudioBase64, ensureAudioMode } from "@/src/lib/audio";
 import { useTheme } from "@/src/theme/ThemeContext";
@@ -16,19 +18,46 @@ import {
   useAudioRecorder,
 } from "expo-audio";
 
+type State = "idle" | "listening" | "thinking" | "speaking" | "completed";
+
+function fmt(sec: number) {
+  const m = Math.floor(sec / 60).toString().padStart(2, "0");
+  const s = Math.floor(sec % 60).toString().padStart(2, "0");
+  return `${m}:${s}`;
+}
+
 export default function VoiceAssistant() {
   const { tokens } = useTheme();
   const { profile } = useAuth();
   const toast = useToast();
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
-  const [state, setState] = useState<OrbState>("idle");
+  const [state, setState] = useState<State>("idle");
   const [transcript, setTranscript] = useState("");
   const [reply, setReply] = useState("");
+  const [elapsed, setElapsed] = useState(0);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const timerRef = useRef<number | null>(null);
 
   useEffect(() => {
     ensureAudioMode();
   }, []);
+
+  const startTimer = () => {
+    setElapsed(0);
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = (setInterval(() => {
+      setElapsed((e) => e + 1);
+    }, 1000) as unknown) as number;
+  };
+
+  const stopTimer = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
+  useEffect(() => () => stopTimer(), []);
 
   const start = async () => {
     if (state !== "idle" && state !== "completed") return;
@@ -39,33 +68,33 @@ export default function VoiceAssistant() {
         return;
       }
     } else {
-      // On web, expo-audio recording is limited. Inform.
-      toast.show("Voice recording works on the mobile build. Use text chat on web.", "info");
+      toast.show("Voice recording requires the mobile build. Use Chat on web.", "info");
       return;
     }
     setTranscript("");
     setReply("");
     setState("listening");
+    startTimer();
     try {
       await recorder.prepareToRecordAsync();
       recorder.record();
     } catch (e: any) {
       toast.show("Could not start recording", "error");
       setState("idle");
+      stopTimer();
     }
   };
 
   const stop = async () => {
     if (state !== "listening") return;
     setState("thinking");
+    stopTimer();
     try {
       await recorder.stop();
       const uri = recorder.uri;
       if (!uri) throw new Error("No recording");
-      // 1) Transcribe
       const t = await Voice.transcribe(uri);
       setTranscript(t.text);
-      // 2) Send to chat (creates conv if needed)
       let cid = conversationId;
       if (!cid) {
         const cr: any = await Chat.create({});
@@ -80,7 +109,6 @@ export default function VoiceAssistant() {
       );
       const ai = r.assistant_message.content as string;
       setReply(ai);
-      // 3) Speak
       setState("speaking");
       const tts = await Voice.tts(ai, profile?.voice_id ?? "alloy");
       await playAudioBase64(tts.audio_base64, tts.format);
@@ -89,25 +117,33 @@ export default function VoiceAssistant() {
       toast.show(e?.message ?? "Voice failed", "error");
       setState("idle");
     } finally {
-      setTimeout(() => setState("idle"), 600);
+      setTimeout(() => setState("idle"), 800);
     }
   };
 
   const aiName = profile?.ai_name ?? "Afifa";
 
+  const label =
+    state === "listening"
+      ? "Listening…"
+      : state === "thinking"
+        ? "Thinking…"
+        : state === "speaking"
+          ? `${aiName} is speaking…`
+          : state === "completed"
+            ? "Done"
+            : `Tap to talk to ${aiName}`;
+
   return (
-    <Screen title="Voice" back testID="voice-assistant-screen" scroll={false}>
+    <Screen title={aiName} back testID="voice-assistant-screen" scroll={false} hideTabPadding>
       <View style={styles.center}>
-        <VoiceOrb state={state} size={260} />
-        <Text style={[styles.state, { color: tokens.primary }]}>
-          {state === "idle" || state === "completed"
-            ? `Hi ${aiName}`
-            : state === "listening"
-              ? "Listening…"
-              : state === "thinking"
-                ? "Thinking…"
-                : "Speaking…"}
+        <Text style={[styles.brand, { color: tokens.text }]}>{aiName}</Text>
+        <View style={{ height: 24 }} />
+        <HorizontalWaveform state={state} width={340} height={170} barCount={48} />
+        <Text style={[styles.timer, { color: tokens.primary }]}>
+          {state === "listening" ? fmt(elapsed) : "00:00"}
         </Text>
+        <Text style={[styles.stateLbl, { color: tokens.textDim }]}>{label}</Text>
 
         {transcript ? (
           <View
@@ -139,25 +175,33 @@ export default function VoiceAssistant() {
           <Pressable
             onPress={stop}
             testID="voice-stop"
-            style={[styles.cta, { backgroundColor: tokens.danger }]}
+            style={[
+              styles.micBtn,
+              { backgroundColor: tokens.danger, shadowColor: tokens.danger },
+            ]}
           >
-            <Text style={styles.ctaTxt}>Stop & send</Text>
+            <Square size={28} color="#fff" fill="#fff" />
           </Pressable>
         ) : (
           <Pressable
             onPress={start}
             testID="voice-start"
+            disabled={state === "thinking" || state === "speaking"}
             style={[
-              styles.cta,
+              styles.micBtn,
               {
                 backgroundColor: tokens.primary,
                 shadowColor: tokens.primary,
+                opacity: state === "thinking" || state === "speaking" ? 0.6 : 1,
               },
             ]}
           >
-            <Text style={[styles.ctaTxt, { color: "#000" }]}>Tap to talk</Text>
+            <Mic size={28} color="#000" />
           </Pressable>
         )}
+        <Text style={[styles.hint, { color: tokens.textMuted }]}>
+          {state === "listening" ? "Tap to stop & send" : "Tap mic to begin"}
+        </Text>
       </View>
     </Screen>
   );
@@ -165,25 +209,40 @@ export default function VoiceAssistant() {
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: "center", paddingTop: 16 },
-  state: { marginTop: 24, fontSize: 20, fontWeight: "800", letterSpacing: 0.4 },
+  brand: {
+    fontSize: 34,
+    fontWeight: "800",
+    letterSpacing: 4,
+  },
+  timer: {
+    marginTop: 18,
+    fontSize: 28,
+    fontWeight: "800",
+    letterSpacing: 1.5,
+    fontVariant: ["tabular-nums"],
+  },
+  stateLbl: { marginTop: 6, fontSize: 13, letterSpacing: 1.2, fontWeight: "600", textTransform: "uppercase" },
   bubble: {
-    marginTop: 16,
+    marginTop: 18,
     padding: 14,
     borderRadius: 16,
     borderWidth: 1,
     maxWidth: "94%",
+    width: "94%",
   },
   bLbl: { fontSize: 10, fontWeight: "800", letterSpacing: 1.6, marginBottom: 4 },
   bTxt: { fontSize: 14, lineHeight: 20 },
-  controls: { paddingHorizontal: 16, paddingBottom: 24 },
-  cta: {
-    paddingVertical: 18,
-    borderRadius: 999,
+  controls: { paddingHorizontal: 16, paddingBottom: 32, alignItems: "center" },
+  micBtn: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
     alignItems: "center",
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
+    justifyContent: "center",
+    shadowOpacity: 0.6,
+    shadowRadius: 24,
     shadowOffset: { width: 0, height: 0 },
-    elevation: 6,
+    elevation: 10,
   },
-  ctaTxt: { fontSize: 16, fontWeight: "800", color: "#fff" },
+  hint: { marginTop: 12, fontSize: 12, letterSpacing: 1.2 },
 });

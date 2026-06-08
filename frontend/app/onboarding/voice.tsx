@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Volume2 } from "lucide-react-native";
 
 import { useAuth } from "@/src/auth/AuthContext";
+import { HorizontalWaveform } from "@/src/components/HorizontalWaveform";
 import { OnboardingShell } from "@/src/components/OnboardingShell";
 import { useToast } from "@/src/components/Toast";
 import { Profile, Voice } from "@/src/lib/api";
@@ -53,6 +54,9 @@ export default function VoiceSelect() {
       primary={{ label: "Continue", onPress: next, loading: busy }}
       testID="onboarding-voice"
     >
+      <View style={{ alignItems: "center", marginBottom: 16 }}>
+        <HorizontalWaveform state={previewing ? "speaking" : "idle"} width={280} height={90} barCount={36} />
+      </View>
       <View style={{ gap: 10 }}>
         {VOICES.map((v) => {
           const active = voice === v.id;

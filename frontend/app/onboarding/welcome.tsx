@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 
-import { VoiceOrb } from "@/src/components/VoiceOrb";
+import { HorizontalWaveform } from "@/src/components/HorizontalWaveform";
 import { OnboardingShell } from "@/src/components/OnboardingShell";
 import { useTheme } from "@/src/theme/ThemeContext";
 
@@ -18,7 +18,7 @@ export default function Welcome() {
       testID="onboarding-welcome"
     >
       <View style={styles.center}>
-        <VoiceOrb state="idle" size={200} />
+        <HorizontalWaveform state="listening" width={320} height={140} />
         <Text style={[styles.tag, { color: tokens.primary }]}>YOUR VOICE · YOUR COMMAND · YOUR WORLD</Text>
       </View>
     </OnboardingShell>

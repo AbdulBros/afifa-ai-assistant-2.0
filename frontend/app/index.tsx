@@ -6,7 +6,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "@/src/auth/AuthContext";
-import { VoiceOrb } from "@/src/components/VoiceOrb";
+import { HorizontalWaveform } from "@/src/components/HorizontalWaveform";
 import { useTheme } from "@/src/theme/ThemeContext";
 
 export default function Index() {
@@ -31,7 +31,7 @@ export default function Index() {
   return (
     <View style={[styles.container, { backgroundColor: tokens.bg, paddingTop: insets.top }]} testID="splash-screen">
       <View style={styles.content}>
-        <VoiceOrb state="idle" size={180} />
+        <HorizontalWaveform state="listening" width={300} height={120} />
         <Text style={[styles.brand, { color: tokens.text }]}>AFIFA</Text>
         <Text style={[styles.tag, { color: tokens.textDim }]}>
           Your Voice. Your Command. Your World.
